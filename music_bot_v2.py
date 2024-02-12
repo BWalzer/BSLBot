@@ -1,6 +1,3 @@
-# todo list
-#
-
 import asyncio
 from collections import deque
 
@@ -57,6 +54,11 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
 
 class Music(commands.Cog):
+    valid_urls = [
+        "youtube",
+        "youtu.be",
+    ]
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.play_music = False
@@ -100,14 +102,13 @@ class Music(commands.Cog):
                         print("\t\tQueue is empty, no new song to play")
                         await self.stop(self.ctx)
                         return
-                    player = await YTDLSource.from_url(self.song, loop=self.bot.loop, stream=True)
-                    self.ctx.voice_client.play(player, after=lambda e: print(f"Player error: {e}") if e else None)
-                    print(f"\t\t\t now playing {player.title}")
-                    await self.ctx.send(f"Now playing: {player.title}")
+                    self.ctx.voice_client.play(self.song, after=lambda e: print(f"Player error: {e}") if e else None)
+                    print(f"\t\t\t now playing {self.song.title}")
+                    await self.ctx.send(f"Now playing: {self.song.title}")
 
-    @staticmethod
-    def validate_link(url) -> bool:
-        return "youtube.com" in url
+    @classmethod
+    def validate_link(cls, url) -> bool:
+        return any(x in url for x in cls.valid_urls)
 
     @commands.command()
     async def play(self, ctx):
@@ -116,11 +117,11 @@ class Music(commands.Cog):
         self.play_music = True
 
     @commands.command()
-    async def add(self, ctx, *, song_url: str):
+    async def add(self, ctx, *, url: str):
         """Add a youtube song to the play queue"""
-        print(f"Adding '{song_url}' to the queue.")
-        if self.validate_link(song_url):
-            self.play_queue.appendleft(song_url)
+        if self.validate_link(url):
+            song = await YTDLSource.from_url(url, stream=True)
+            self.play_queue.append(song)
             await ctx.send(f"Song added to queue 👍")
         else:
             await ctx.send(f"🚨Not a valid Youtube URL🚨")
@@ -130,7 +131,9 @@ class Music(commands.Cog):
         """Show the current play queue"""
         print("Showing the queue")
         newline = "\n"
-        msg = f"""Current queue:{newline}{'{newline}'.join(self.play_queue)} """
+        songs = [song.title for song in self.play_queue]
+        # msg = f"""Current queue:{newline}{f'{newline}'.join(songs)} """
+        msg = """Current queue:\n""" f"""{f'{newline}'.join(songs)}"""
         await ctx.send(msg)
 
     # @commands.command()
@@ -181,10 +184,6 @@ class Music(commands.Cog):
     @add.before_invoke
     async def acknowledge_cmd(self, ctx):
         await ctx.message.add_reaction("👍")
-
-    @add.after_invoke
-    async def finish_cmd(self, ctx):
-        await ctx.message.add_reaction("✅")
 
 
 intents = discord.Intents.default()
