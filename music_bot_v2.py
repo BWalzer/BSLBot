@@ -43,7 +43,9 @@ class YTDLSource(discord.PCMVolumeTransformer):
     @classmethod
     async def from_url(cls, url, *, loop=None, stream=False):
         loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+        data = await loop.run_in_executor(
+            None, lambda: ytdl.extract_info(url, download=not stream)
+        )
 
         if "entries" in data:
             # take first item from a playlist
@@ -102,7 +104,10 @@ class Music(commands.Cog):
                         print("\t\tQueue is empty, no new song to play")
                         await self.stop(self.ctx)
                         return
-                    self.ctx.voice_client.play(self.song, after=lambda e: print(f"Player error: {e}") if e else None)
+                    self.ctx.voice_client.play(
+                        self.song,
+                        after=lambda e: print(f"Player error: {e}") if e else None,
+                    )
                     print(f"\t\t\t now playing {self.song.title}")
                     await self.ctx.send(f"Now playing: {self.song.title}")
 
@@ -122,9 +127,9 @@ class Music(commands.Cog):
         if self.validate_link(url):
             song = await YTDLSource.from_url(url, stream=True)
             self.play_queue.append(song)
-            await ctx.send(f"Song added to queue 👍")
+            await ctx.send("Song added to queue 👍")
         else:
-            await ctx.send(f"🚨Not a valid Youtube URL🚨")
+            await ctx.send("🚨Not a valid Youtube URL🚨")
 
     @commands.command()
     async def queue(self, ctx):
@@ -133,7 +138,7 @@ class Music(commands.Cog):
         newline = "\n"
         songs = [song.title for song in self.play_queue]
         # msg = f"""Current queue:{newline}{f'{newline}'.join(songs)} """
-        msg = """Current queue:\n""" f"""{f'{newline}'.join(songs)}"""
+        msg = """Current queue:\n""" f"""{f"{newline}".join(songs)}"""
         await ctx.send(msg)
 
     # @commands.command()
